@@ -20,7 +20,7 @@ def talker():
     time.sleep(1)
     pub = rospy.Publisher('/mavros/fake_gps/mocap/tf', TransformStamped, queue_size=10)  # create a ROS publisher
     rospy.init_node('talker_gps_fix', anonymous=True)
-    rate = rospy.Rate(1)  # 5 Hz -- Frequency of the GPS
+    rate = rospy.Rate(10)  # 10 Hz -- Frequency of the GPS
     while not rospy.is_shutdown():
         try:
             line = DWM.readline()
