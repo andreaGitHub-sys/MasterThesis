@@ -1,0 +1,55 @@
+import rospy
+import time
+import serial
+from pkg.msg import TransformStamped
+
+def talker():
+    DWM = serial.Serial(port="/dev/ttyACM0", baudrate=115200)
+    ser = serial.Serial('COM15', 115200, timeout=1)
+    print("Connected to " + DWM.name)
+    DWM.write("\r\r".encode())  # Initializes the tag
+    time.sleep(1)
+    DWM.write("lec\r".encode())  # Standard message to read the coordinates
+    time.sleep(1)
+    pub = rospy.Publisher('/mavros/fake_gps/mocap/tf', TransformStamped, queue_size=10)  # create a ROS publisher
+    rospy.init_node('talker_gps_fix', anonymous=True)
+    rate = rospy.Rate(10)  # 10 Hz -- Frequency of the GPS
+    while not rospy.is_shutdown():
+        try:
+            line = DWM.readline()
+            altitude_string=ser.readLine()
+            if (line && altitude_string):
+                if (len(line) >= 140) and ("POS" in line):  # evaluate whether it reads correctly or not
+                    parse = line.decode().split(",")  #
+                    x_pos_uwb = float(parse[parse.index("POS") + 1])  #
+                    y_pos_uwb = float(parse[parse.index("POS") + 2])  #
+                    z_pos_uwb = float(parse[parse.index("POS") + 3])  # 
+                    pos = (x_pos_uwb, y_pos_uwb, z_pos_uwb)
+                    alt_vl53l1x = int(altitude_string.decode())
+                    fix_obj = TransformStamped()
+                    fix_obj.header.frame_id = "map"
+                    fix_obj.child_frame_id = "fix"
+                    fix_obj.transform.translation.x = x_pos
+                    fix_obj.transform.translation.y = y_pos
+                    fix_obj.transform.translation.z = alt_vl53l1x
+                    fix_obj.transform.rotation.x = 0
+                    fix_obj.transform.rotation.y = 0
+                    fix_obj.transform.rotation.z = 0
+                    fix_obj.transform.rotation.w = 0
+                    pub.publish(fix_obj)
+                    rate.sleep()
+                    print(pos)
+                else:
+                    print("Position not calculated: ", line.decode())
+        except Exception as ex:
+            print(ex)
+            break
+    DWM.write("\r".encode())
+    DWM.close()
+
+
+if __name__ == '__main__':
+    try:
+        talker()
+    except rospy.ROSInterruptException:
+        pass
