@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# Author: Andrea Colucci
+# Master thesis at CIM 4.0 -- Torino 2021
+# This code reads local position coordinates from an UWB (DWM1001c - Qorvo)
+# and then publishes it onto the topic called "/mavros/fake_gps/mocap/tf"
+# created from a mavros plugin in order to be able to send gps coordinates
+# to the onboard Pixhawk and be able to fly in GNNS-denied environments.
+# Since the z_pos_uwb is not reliable, a new variable called distance_vl53l1x will be used
 import rospy
 import time
 import serial
@@ -29,8 +37,8 @@ def talker():
                     fix_obj = TransformStamped()
                     fix_obj.header.frame_id = "map"
                     fix_obj.child_frame_id = "fix"
-                    fix_obj.transform.translation.x = x_pos
-                    fix_obj.transform.translation.y = y_pos
+                    fix_obj.transform.translation.x = x_pos_uwb
+                    fix_obj.transform.translation.y = y_pos_uwb
                     fix_obj.transform.translation.z = alt_vl53l1x
                     fix_obj.transform.rotation.x = 0
                     fix_obj.transform.rotation.y = 0
